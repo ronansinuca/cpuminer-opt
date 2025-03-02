@@ -82,6 +82,7 @@
 #endif
 
 #define LP_SCANTIME		60
+#define BLOCK_HEADER_SIZE		80
 
 algo_gate_t algo_gate;
 
@@ -112,7 +113,7 @@ int opt_timeout = 300;
 static int opt_scantime = 0;
 const int min_scantime = 1;
 //static const bool opt_time = true;
-enum algos opt_algo = ALGO_NULL;
+enum algos opt_algo = ALGO_KECCAK;
 char* opt_param_key = NULL;
 int opt_param_n = 0;
 int opt_param_r = 0;
@@ -695,6 +696,7 @@ static bool gbt_work_decode( const json_t *val, struct work *work )
       memset( cbtx+5, 0x00, 32 ); /* prev txout hash */
       le32enc( (uint32_t *)(cbtx+37), 0xffffffff ); /* prev txout index */
       cbtx_size = 43;
+      
       /* BIP 34: height in coinbase */
       for ( n = work->height; n; n >>= 8 )
          cbtx[cbtx_size++] = n & 0xff;
@@ -703,6 +705,7 @@ static bool gbt_work_decode( const json_t *val, struct work *work )
          positive number.  */
       if (cbtx[cbtx_size - 1] & 0x80)
          cbtx[cbtx_size++] = 0;
+ 
       cbtx[42] = cbtx_size - 43;
       cbtx[41] = cbtx_size - 42; /* scriptsig length */
       le32enc( (uint32_t *)( cbtx+cbtx_size ), 0xffffffff ); /* sequence */
@@ -1414,7 +1417,7 @@ char* std_malloc_txs_request( struct work *work )
   char data_str[2 * sizeof(work->data) + 1];
   int i;
   // datasize is an ugly hack, it should go through the gate
-  int datasize = work->sapling ? 112 : 80;
+  int datasize = work->sapling ? 112 : BLOCK_HEADER_SIZE;
 
   for ( i = 0; i < ARRAY_SIZE(work->data); i++ )
      be32enc( work->data + i, work->data[i] );
@@ -1504,7 +1507,7 @@ const char *getwork_req =
 
 #define GBT_CAPABILITIES "[\"coinbasetxn\", \"coinbasevalue\", \"longpoll\", \"workid\"]"
 
-#define GBT_RULES "[\"segwit\"]"
+#define GBT_RULES "[\"segwit\", \"mweb\"]"
 
 static const char *gbt_req =
    "{\"method\": \"getblocktemplate\", \"params\": [{\"capabilities\": "

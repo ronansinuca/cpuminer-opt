@@ -623,7 +623,7 @@ json_t *json_rpc_call(CURL *curl, const char *url,
    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, rpc_req);
 
 	if (opt_protocol)
-		applog(LOG_DEBUG, "JSON protocol request:\n%s\n", rpc_req);
+		applog(LOG_DEBUG, "JSON protocol request:\n%s\n%s\n", url, rpc_req);
 
 	headers = curl_slist_append(headers, "Content-Type: application/json");
 	headers = curl_slist_append(headers, "User-Agent: " USER_AGENT);
@@ -668,6 +668,9 @@ json_t *json_rpc_call(CURL *curl, const char *url,
 		applog(LOG_ERR, "Empty data received in json_rpc_call.");
 		goto err_out;
 	}
+
+	if (opt_protocol)
+		applog(LOG_DEBUG, "JSON Response:\n%s\n", (char*) all_data.buf);
 
 	json_buf = hack_json_numbers((char*) all_data.buf);
 	errno = 0; /* needed for Jansson < 2.1 */
@@ -731,6 +734,7 @@ json_t *json_rpc_call(CURL *curl, const char *url,
 	return val;
 
 err_out:
+	applog(LOG_DEBUG, "JSON Response:\n%s\n", (char*) all_data.buf);
 	free(hi.lp_path);
 	free(hi.reason);
 	free(hi.stratum_url);
